@@ -1,0 +1,41 @@
+<!doctype html>
+<html>
+	<head>
+		<title>IR362</title>
+		<style>
+			* { margin: 0; padding: 0; box-sizing: border-box; }
+			body { padding: 5px; font: 13px Helvetica, Arial; }
+			#queryForm input { display: inline-block; border: 1px solid #82e0ff; padding: 10px; width: 640px; }
+			#queryForm button { display: inline-block; width: 120px; background-color: #82e0ff; border: 0; padding: 10px; }
+			#messages { font-family: monospace; list-style-type: none; margin: 0; margin-top: 5px; padding: 0; }
+			#messages li { padding: 5px 10px; }
+			#messages li:nth-child(odd) { background: #eee; }
+		</style>
+	</head>
+	<body>
+		<form id="queryForm" action="">
+			<input id="m" autocomplete="off" /><button>Search</button>
+		</form>
+		<ul id="messages"></ul>
+		
+		<script src="/socket.io/socket.io.js"></script>
+		<script src="/js/jquery-1.11.1.js"></script>
+		<script>
+			var socket = io();
+			$('#queryForm').submit(function() {
+				socket.emit('chat message', $('#m').val());
+				$('#m').val('');
+				return false;
+			});
+			socket.on('chat message', function(msg){
+				$('#messages').empty();
+				window.scrollTo(0, 0);
+				var doc = JSON.parse(msg);
+				for (var i = 0; i < doc.length; i++) {
+					$('#messages').append($('<li>').text(doc[i]));
+				}
+				window.scrollTo(0, 0);
+			});
+		</script>
+	</body>
+</html>
