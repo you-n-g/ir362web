@@ -1,41 +1,198 @@
 <!doctype html>
-<html>
-	<head>
-		<title>IR362</title>
-		<style>
-			* { margin: 0; padding: 0; box-sizing: border-box; }
-			body { padding: 5px; font: 13px Helvetica, Arial; }
-			#queryForm input { display: inline-block; border: 1px solid #82e0ff; padding: 10px; width: 640px; }
-			#queryForm button { display: inline-block; width: 120px; background-color: #82e0ff; border: 0; padding: 10px; }
-			#messages { font-family: monospace; list-style-type: none; margin: 0; margin-top: 5px; padding: 0; }
-			#messages li { padding: 5px 10px; }
-			#messages li:nth-child(odd) { background: #eee; }
-		</style>
-	</head>
-	<body>
-		<form id="queryForm" action="">
-			<input id="m" autocomplete="off" /><button>Search</button>
-		</form>
-		<ul id="messages"></ul>
+<html lang="zh-CN">
+<head>
+	<meta charset="utf-8">
+	<title>IR362</title>
+	<style>
+		* { font-size: 16px; margin: 0; padding: 0; border: 0; box-sizing: border-box; -moz-box-sizing: border-box; -webkit-box-sizing: border-box; font-family: "Arial", "sans-serif";}
+		html { height: 100%; }
+		body { height: 100%; padding: 5px; font: 13px Helvetica, Arial; }
+		body.initial > #outer { width: 100%; height: 100%; display: table; }
+		body.initial > #outer > #inner { display: table-cell; vertical-align: middle; text-align: center; }
+		body.initial > #resultStat { display: none; }
+		body.initial > #result { display: none; }
+		body.initial > #pageCtrl { display: none; }
+		body.initial #logo { width: initial; height: initial; display: block; margin: 16px; }
+		body.initial #logo > .digit { vertical-align: initial; font-size: 140px;}
+		body.initial #logo > .word { vertical-align: initial; font-size: 36px; }
+		body.initial #queryForm { height: 256px; }
+		body.initial #queryForm input { padding-left: 8px; font-size: 20px; height: 46px; line-height: 46px; }
+		body.initial #queryForm button { margin-left: 0; font-size: 20px; height: 46px; }
+		#inner { font-size: 0; -webkit-text-size-adjust:none; }
+		#logo { width: 180px; vertical-align: middle; height: 64px; display: inline-block; text-decoration: none; outline: none; }
+		#logo > .digit { vertical-align: bottom; font-size: 46px; line-height: 64px; font-weight: bold; color: #2878ff; font-family: "微软雅黑"; }
+		#logo > .word { vertical-align: bottom; font-size: 38px; line-height: 61px; color: #808080; margin-left: 5px; }
+		#queryForm { vertical-align: middle; display: inline-block; }
+		#queryForm input { font-size: 16px; vertical-align: bottom; height: 36px; line-height: 36px; display: inline-block; border: 1px solid #2878ff; padding-left: 8px; width: 520px; outline: medium; }
+		#queryForm button { margin-left: 15px; font-size: 16px; vertical-align: bottom; height: 36px; display: inline-block; width: 120px; color: #ffffff; background-color: #2878ff; }
+		#resultStat { margin-left: 188px; margin-top: 5px; }
+		#resultStat * { font-size: small; }
+		#hasResultMsg { color: #808080; }
+		#noResultMsg { font-size: medium; display: none; }
+		#resultStat.noResult > #noResultMsg { display: inline-block; }
+		#resultStat.noResult > #hasResultMsg { display: none; }
+		#result { font-size: medium; margin-left: 188px; list-style-type: none; margin-top: 15px; }
+		#result li { padding: 15px 0 15px 0; }
+		#pageCtrl { -moz-user-select: none; -webkit-user-select: none; -ms-user-select: none; -khtml-user-select: none; user-select: none; color: #0046b8; font-size: 0; -webkit-text-size-adjust:none; margin-left: 188px; margin-top: 15px; }
+		#pageCtrl.onePage { display: none; }
+		#pageCtrl a { font-size: small; line-height: 36px; text-align: center; cursor: pointer; display: inline-block; border: 1px solid #eeeeee; margin-right: 5px; width: 36px; height: 36px; }
+		#pageCtrl a.currentPage { border: 1px solid #ffffff; cursor: initial; color: initial; }
+		#prevPage, #nextPage { width: 72px!important; }
+		#pageCtrl.isFirst > #prevPage, #pageCtrl.isLast > #nextPage { cursor: initial; color: #cccccc; }
+	</style>
+</head>
+
+<body class="initial">
+<script src="/socket.io/socket.io.js"></script>
+<script src="/js/jquery-1.11.1.js"></script>
+<script>
+	var DOC_PER_PAGE = 10;
+	var keyword = '';
+	var docCount = 0;
+	var pageNum = 0;
+	var pageCount = 0;
+	var start = 0;
+	var end = 0;
 		
-		<script src="/socket.io/socket.io.js"></script>
-		<script src="/js/jquery-1.11.1.js"></script>
-		<script>
-			var socket = io();
-			$('#queryForm').submit(function() {
-				socket.emit('chat message', $('#m').val());
-				$('#m').val('');
-				return false;
-			});
-			socket.on('chat message', function(msg){
-				$('#messages').empty();
-				window.scrollTo(0, 0);
-				var doc = JSON.parse(msg);
-				for (var i = 0; i < doc.length; i++) {
-					$('#messages').append($('<li>').text(doc[i]));
+	if (location.hash) {
+		var queryString = location.hash.substr(1).split('&');
+		for (var i = 0; i < queryString.length; i++) {
+			if (queryString[i].indexOf('keyword=') === 0) {
+				keyword = queryString[i].split('keyword=')[1];
+			} else if (queryString[i].indexOf('start=') === 0) {
+				start = parseInt(queryString[i].split('start=')[1]);
+			} else if (queryString[i].indexOf('end=') === 0) {
+				end = parseInt(queryString[i].split('end=')[1]);
+			}
+		}
+		if (keyword) {
+			if (end) {
+				DOC_PER_PAGE = end - start;
+			}
+			$('body').removeClass('initial');
+		}
+	}
+</script>
+
+<div id="outer">
+	<div id="inner">
+		<a id="logo" href="/"><span class="digit">362</span><span class="word">搜索</span></a>
+		<form id="queryForm" action="">
+			<input id="m" autocomplete="off" /><button>搜索</button>
+		</form>
+	</div>
+</div>
+<div id="resultStat">
+	<span id="hasResultMsg">找到 <span id="docCount"></span> 条结果</span>
+	<span id="noResultMsg">未找到任何搜索结果。</span>
+</div>
+<ul id="result"></ul>
+<div id="pageCtrl">
+	<a id="prevPage">上一页</a>
+	<span id="pageNum"></span>
+	<a id="nextPage">下一页</a>
+<div>
+
+<script>
+	var socket = io();
+	
+	function search(startPage) {
+		start = startPage;
+		end = start + DOC_PER_PAGE;
+		location.hash = 'keyword=' + encodeURIComponent(keyword) + '&start=' + start + '&end=' + end;
+		socket.emit('search', JSON.stringify({keyword: keyword, start: start, end: end}));
+	}
+	
+	socket.on('search', function(msg) {
+		$('#result').empty();
+		var res = JSON.parse(msg);
+		keyword = res.keyword;
+		$('#m').val(keyword);
+		docCount = res.docCount;
+		pageCount = Math.ceil(docCount / DOC_PER_PAGE);
+		if (docCount > 0) {
+			$('#docCount').text(docCount);
+			$('#resultStat').removeClass('noResult');
+			for (var i = 0; i < res.snippetList.length; i++) {
+				$('#result').append($('<li>').text(res.snippetList[i]));
+			}
+		} else {
+			$('#resultStat').addClass('noResult');
+		}
+		pageNum = Math.ceil(res.start / DOC_PER_PAGE);
+		var startPage = pageNum - 5;
+		if (startPage < 0) {
+			startPage = 0;
+		}
+		var endPage = startPage + 10;
+		if (endPage > pageCount) {
+			endPage = pageCount;
+			startPage = endPage - 10;
+			if (startPage < 0) {
+				startPage = 0;
+			}
+		}
+		$('#pageNum').empty();
+		for (var i = startPage; i < endPage; i++) {
+			(function() {
+				var newPage = $('<a>').text(i + 1);
+				var newStart = DOC_PER_PAGE * i;
+				if (i != pageNum) {
+					newPage.click(function() {
+						search(newStart);
+					});
+				} else {
+					newPage.addClass('currentPage');
 				}
-				window.scrollTo(0, 0);
-			});
-		</script>
-	</body>
+				$('#pageNum').append(newPage);
+			})();
+		}
+		var onePage = true;
+		if (pageNum > 0) {
+			onePage = false;
+			$('#pageCtrl').removeClass('isFirst');
+		} else {
+			$('#pageCtrl').addClass('isFirst');
+		}
+		if (res.start + res.snippetList.length < docCount) {
+			onePage = false;
+			$('#pageCtrl').removeClass('isLast');
+		} else {
+			$('#pageCtrl').addClass('isLast');
+		}
+		if (onePage) {
+			$('#pageCtrl').addClass('onePage');
+		} else {
+			$('#pageCtrl').removeClass('onePage');
+		}
+		$('body').removeClass('initial');
+		window.scrollTo(0, 0);
+	});
+	
+	$('#queryForm').submit(function() {
+		keyword = $('#m').val();
+		if (keyword !== '') {
+			$('#m').blur();
+			search(0);
+		} else {
+			$('body').addClass('initial');
+			location.hash = '';
+		}
+		return false;
+	});
+	$('#prevPage').click(function() {
+		if (pageNum > 0) {
+			search(DOC_PER_PAGE * (pageNum - 1));
+		}
+	});
+	$('#nextPage').click(function() {
+		if (pageNum < pageCount - 1) {
+			search(DOC_PER_PAGE * (pageNum + 1));
+		}
+	});
+	if (keyword) {
+		search(start);
+	}
+</script>
+</body>
 </html>
