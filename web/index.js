@@ -15,10 +15,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-var RETRIEVE_EXEC = '/home/young/workspace/terrier-4.0_w/ir362bin/retrieve.sh';
-var GETDOC_EXEC = '/home/young/workspace/terrier-4.0_w/ir362bin/get_doc.sh';
-//var RETRIEVE_EXEC = 'ls';
-//var GETDOC_EXEC = 'cat';
+//var RETRIEVE_EXEC = '/home/young/workspace/terrier-4.0_w/ir362bin/retrieve.sh';
+//var GETDOC_EXEC = '/home/young/workspace/terrier-4.0_w/ir362bin/get_doc.sh';
+var RETRIEVE_EXEC = 'ls';
+var GETDOC_EXEC = 'cat';
 var PORT = 8888;
 
 var spawn = require('child_process').spawn;
@@ -56,8 +56,8 @@ io.on('connection', function(socket) {
 				if (typeof(snippetList[i]) !== 'undefined') {
 					getDocDone();
 				} else {
-					var getDocProcess = spawn(GETDOC_EXEC, [docList[i]]);
-					//var getDocProcess = spawn(GETDOC_EXEC, [__dirname + '/' + 'test' + '/' + docList[i]]);
+					//var getDocProcess = spawn(GETDOC_EXEC, [docList[i]]);
+					var getDocProcess = spawn(GETDOC_EXEC, [__dirname + '/' + 'test' + '/' + docList[i]]);
 					var getDocOut = '';
 					getDocProcess.stdout.on('data', function(data) {
 						getDocOut += data;
