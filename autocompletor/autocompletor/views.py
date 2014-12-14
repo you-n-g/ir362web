@@ -15,5 +15,10 @@ def get_match(request, param=""):
     return HttpResponse(result)
 
 def update_query(request, query=""):
-    auto_completor.update_query(query)
-    return HttpResponse("Success")
+    related = auto_completor.update_query(query)
+    results = []
+    if related:
+        for r in related:
+            results.append(r[0])
+    result = json.dumps(results)
+    return HttpResponse(result)
