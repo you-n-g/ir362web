@@ -4,7 +4,7 @@
 	<meta charset="utf-8">
 	<title>362 搜索</title>
 	<style>
-		* { font-size: 16px; margin: 0; padding: 0; border: 0; box-sizing: border-box; -moz-box-sizing: border-box; -webkit-box-sizing: border-box; font-family: "Arial", "sans-serif";}
+		* { font-size: 16px; margin: 0; padding: 0; border: 0; box-sizing: border-box; -moz-box-sizing: border-box; -webkit-box-sizing: border-box; font-family: "Arial", "sans-serif", "SimHei";}
 		html { height: 100%; }
 		body { height: 100%; color: #444444; }
 		a { outline: none; text-decoration: none; }
@@ -37,7 +37,7 @@
 		#searchForm input:focus { border-color: #0f67ff; }
 		#searchForm button { cursor: pointer; border-radius: 2px; margin-left: 15px; font-size: 16px; vertical-align: bottom; height: 36px; display: inline-block; width: 120px; color: #ffffff; background: -moz-linear-gradient(top, #0f67ff, #2f5ff7); background: -webkit-linear-gradient(top, #0f67ff, #2f5ff7); background: -khtml-linear-gradient(top, #0f67ff, #2f5ff7); background: -ms-linear-gradient(top, #0f67ff, #2f5ff7); background: -o-linear-gradient(top, #0f67ff, #2f5ff7); background: linear-gradient(top, #0f67ff, #2f5ff7); }
 		#searchForm button:hover { background: -moz-linear-gradient(top, #2f5ff7, #2f57ef); background: -webkit-linear-gradient(top, #0f67ff, #2f5ff7); background: -khtml-linear-gradient(top, #0f67ff, #2f5ff7); background: -ms-linear-gradient(top, #0f67ff, #2f5ff7); background: -o-linear-gradient(top, #0f67ff, #2f5ff7); background: linear-gradient(top, #0f67ff, #2f5ff7); }
-		#suggest { display: none; border: 1px solid #cccccc; background: #ffffff; box-shadow: 0px 1px 3px #bbbbbb; left: 120px; top: 57px; position: absolute; width: 520px; max-height: 288px; overflow: hidden; list-style-type: none; text-align: left; }
+		#suggest { opacity: 0.93; display: none; border: 1px solid #cccccc; background: #ffffff; box-shadow: 0px 1px 3px #bbbbbb; left: 120px; top: 57px; position: absolute; width: 520px; max-height: 288px; overflow: hidden; list-style-type: none; text-align: left; }
 		#suggest li.selected, #suggest li:hover { background: #dddddd; }
 		#suggest li { display: block; padding-left: 8px; line-height: 36px; }
 		
@@ -59,6 +59,12 @@
 		#result li .date, #result li .commentNumber { white-space: nowrap; color: #999999; }
 		#result li .snippet { text-align: justify; }
 		#result li .snippet .keyword { color: #ff4a2e; }
+		
+		#relative { width: 512px; margin-bottom: 30px; }
+		#relative ul { vertical-align: top; display: inline-block; max-width: 240px; list-style-type: none; }
+		#relative #relativer { margin-left: 32px; }
+		#relative li a { display: inline-block; max-width: 240px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 13px; color: #1a00c2; line-height: 32px; }
+		#relative li a:hover { cursor: pointer; }
 		
 		#pageCtrl { margin-top: 10px; -moz-user-select: none; -webkit-user-select: none; -ms-user-select: none; -khtml-user-select: none; user-select: none; color: #1a00c2; font-size: 0; -webkit-text-size-adjust:none; }
 		#pageCtrl.onePage { display: none; }
@@ -98,7 +104,7 @@
 		var queryString = location.hash.substr(1).split('&');
 		for (var i = 0; i < queryString.length; i++) {
 			if (queryString[i].indexOf('keyword=') === 0) {
-				keyword = queryString[i].split('keyword=')[1];
+				keyword = decodeURIComponent(queryString[i].split('keyword=')[1]);
 			} else if (queryString[i].indexOf('start=') === 0) {
 				start = parseInt(queryString[i].split('start=')[1]);
 			} else if (queryString[i].indexOf('end=') === 0) {
@@ -145,6 +151,9 @@
 			</div>
 		</li>
 	</ul>
+	<div id="relative">
+		<ul id="relativel"></ul><ul id="relativer"></ul>
+	</div>
 	<div id="pageCtrl">
 		<a id="prevPage">上一页</a>
 		<span id="pageNum"></span>
@@ -154,7 +163,7 @@
 <div id="bottomBar">
 	<a>帮助</a>
 	<a>反馈</a>
-	<a href="http://www.gnu.org/licenses/gpl.html">使用条款</a>
+	<a href="http://www.gnu.org/licenses/gpl.html">条款</a>
 </div>
 </div>
 
@@ -165,20 +174,15 @@
 	function search(startPage) {
 		start = startPage;
 		end = start + DOC_PER_PAGE;
-		userHash = false;
-		location.hash = 'keyword=' + encodeURIComponent(keyword) + '&start=' + start + '&end=' + end;
-		socket.emit('search', JSON.stringify({keyword: keyword, start: start, end: end}));
-	}
-	
-	function execQuery() {
-		if (userHash) {
-			parseQuery();
-			if (keyword) {
-				search(start);
-			}
-		} else {
-			userHash = true;
+		var newHash = '#keyword=' + encodeURIComponent(keyword) + '&start=' + start + '&end=' + end;
+		var newHashOrigin = '#keyword=' + keyword + '&start=' + start + '&end=' + end;
+		if (location.hash !== newHash && location.hash !== newHashOrigin) {
+			userHash = false;
 		}
+		location.hash = newHash;
+		socket.emit('search', JSON.stringify({keyword: keyword, start: start, end: end}));
+		$('#suggest').hide();
+		$('#suggest').empty();
 	}
 	
 	if ($('body').hasClass('initial')) {
@@ -203,7 +207,7 @@
 					continue;
 				}
 				var newDoc = $('#template').clone().removeAttr('id');
-				newDoc.find('.title').text(outline.title).attr('href', 'http://' + outline.url);
+				newDoc.find('.title').text(outline.title).attr('href', 'http://' + outline.url).attr('target', '_blank');
 				newDoc.find('.url').text(outline.url);
 				newDoc.find('.url').html(newDoc.find('.url').html().replace(new RegExp(keyword, 'g'), '<span class="keyword">' + keyword + '</span>'));
 				newDoc.find('.date').text(outline.date + ' - ');
@@ -265,14 +269,45 @@
 		window.scrollTo(0, 0);
 	});
 	
+	function updateQuery() {
+		$.get(suggestUrl + '/update_query/' + encodeURIComponent(keyword), function(data) {
+			$('#relativel').empty();
+			$('#relativer').empty();
+			var originList = JSON.parse(data);
+			var list = [];
+			for (var i = 0; i < originList.length; i++) {
+				if (originList[i] && originList[i].length > keyword.length) {
+					list.push(originList[i]);
+				}
+			}
+			var lcount = Math.ceil(list.length / 2);
+			function relClick() {
+				$('#m').val($(this).text());
+				$('#searchForm').submit();
+			}
+			for (var i = 0; i < lcount; i++) {
+				var rellink = $('<a>').text(list[i]);
+				rellink.click(relClick);
+				$('#relativel').append($('<li>').append(rellink));
+			}
+			for (var i = lcount; i < list.length; i++) {
+				var rellink = $('<a>').text(list[i]);
+				rellink.click(relClick);
+				$('#relativer').append($('<li>').append(rellink));
+			}
+			if (lcount) {
+				$('#relative').show();
+			}
+		});
+	}
+	
 	$('#searchForm').submit(function() {
 		keyword = $('#m').val();
 		if (keyword !== '') {
 			$('#m').blur();
 			search(0);
-			$.get(suggestUrl + '/update_query/' + encodeURIComponent(lastValue), function(data) {
-				console.log(data);
-			});
+			$('#relative').hide();
+			updateQuery();
 		} else {
 			$('body').addClass('initial');
 			location.hash = '';
@@ -296,6 +331,7 @@
 		}
 	});
 	var lastValue = $('#m').val();
+	var timerId = null;
 	$('#m').keydown(function(e) {
 		if (e.which === 40 || e.which === 38) {
 			return false;
@@ -341,22 +377,35 @@
 				}
 			}
 		} else if (lastValue !== $('#m').val()) {
+			if (timerId !== null) {
+				clearTimeout(timerId);
+				timerId = null;
+			}
 			lastValue = $('#m').val();
 			if (lastValue) {
-				$.get(suggestUrl + '/get_match/' + encodeURIComponent(lastValue), function(data) {
-					var list = JSON.parse(data);
-					var length = list.length;
-					if (length) {
-						$('#suggest').empty();
-						if (length > 8) {
-							length = 8;
+				timerId = setTimeout(function() {
+					timerId = null;
+					var requestValue = lastValue;
+					$.get(suggestUrl + '/get_match/' + encodeURIComponent(requestValue), function(data) {
+						var list = JSON.parse(data);
+						if (list.length) {
+							$('#suggest').empty();
+							var count = 0;
+							for (var i = 0; i < list.length && count < 8; i++) {
+								if (list[i] !== lastValue) {
+									$('#suggest').append($('<li>').text(list[i]));
+									count++;
+								}
+							}
+							if (count && requestValue === $('#m').val() && $('#m').is(":focus")) {
+								$('#suggest').show();
+							} else {
+								$('#suggest').hide();
+								$('#suggest').empty();
+							}
 						}
-						for (var i = 0; i < length; i++) {
-							$('#suggest').append($('<li>').text(list[i]));
-						}
-						$('#suggest').show();
-					}
-				});
+					});
+				}, 300);
 			} else {
 				$('#suggest').hide();
 				$('#suggest').empty();
@@ -373,9 +422,24 @@
 			$('#searchButton').trigger('click');
 		}
 	});
-	$(window).bind('hashchange', execQuery);
+	$(window).bind('hashchange', function() {
+		if (userHash) {
+			parseQuery();
+			if (keyword) {
+				search(start);
+				updateQuery();
+			} else {
+				$('body').addClass('initial');
+				$('#m').focus();
+				$('#result').empty();
+			}
+		} else {
+			userHash = true;
+		}
+	});
 	if (keyword) {
 		search(start);
+		updateQuery();
 	}
 </script>
 </body>
