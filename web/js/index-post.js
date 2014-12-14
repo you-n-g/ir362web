@@ -66,7 +66,12 @@ socket.on('search', function(msg) {
 			newDoc.find('.url').html(newDoc.find('.url').html().replace(new RegExp(keyword, 'g'), '<span class="keyword">' + keyword + '</span>'));
 			newDoc.find('.date').text(outline.date + ' - ');
 			newDoc.find('.commentNumber').text(outline.commentNumber + ' 条评论 - ');
-			newDoc.find('.snippet').text(outline.snippet);
+			
+			/*
+			 * 临时去掉空格和日期，等待后端解决
+			 */
+			newDoc.find('.snippet').text(outline.snippet.replace(/　/g, ' ').substr(17));
+			
 			newDoc.find('.snippet').html(newDoc.find('.snippet').html().replace(new RegExp(keyword, 'g'), '<span class="keyword">' + keyword + '</span>'));
 			$('#result').append(newDoc);
 		}
