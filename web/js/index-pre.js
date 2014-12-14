@@ -17,6 +17,7 @@
 
 var siteTitle = '362 搜索';
 var suggestUrl = 'http://192.168.56.101:8000';
+var previewUrl = 'http://192.168.56.101:8889';
 var DOC_PER_PAGE = 10;
 var keyword;
 var docCount = 0;
