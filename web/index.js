@@ -15,24 +15,24 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-var RETRIEVE_EXEC = '/home/young/workspace/terrier-4.0_w/ir362bin/retrieve.sh';
-var GETDOC_EXEC = '/home/young/workspace/terrier-4.0_w/ir362bin/get_doc.sh';
-//var RETRIEVE_EXEC = 'ls';
-//var GETDOC_EXEC = 'cat';
+var RETRIEVE_URL = 'http://192.168.56.101:8080/IR362Server/GetSearchResults?q=';
+var GETDOC_URL = 'http://192.168.56.101:8080/IR362Server/GetDocInfo?id=';
 var PORT = 8888;
 
 var spawn = require('child_process').spawn;
-var app = require('express')();
+var express = require('express');
+var app = express();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
+var request = require('request');
+var path = require('path');
 
 app.get('/', function(req, res) {
 	res.sendFile(__dirname + '/index.html');
 });
 
-app.get('/js/jquery-1.11.1.js', function(req, res) {
-	res.sendFile(__dirname + '/jquery-1.11.1.js');
-});
+app.use('/js', express.static(path.join(__dirname, 'js')));
+app.use('/css', express.static(path.join(__dirname, 'css')));
 
 io.on('connection', function(socket) {
 	var keyword = '';
@@ -56,15 +56,11 @@ io.on('connection', function(socket) {
 				if (typeof(snippetList[i]) !== 'undefined') {
 					getDocDone();
 				} else {
-					var getDocProcess = spawn(GETDOC_EXEC, [docList[i]]);
-					//var getDocProcess = spawn(GETDOC_EXEC, [__dirname + '/' + 'test' + '/' + docList[i]]);
-					var getDocOut = '';
-					getDocProcess.stdout.on('data', function(data) {
-						getDocOut += data;
-					});
-					getDocProcess.on('close', function(code) {
-						snippetList[i] = getDocOut;
-						getDocDone();
+					request(GETDOC_URL + docList[i], function (error, response, body) {
+						if (!error && response.statusCode == 200) {
+							snippetList[i] = body;
+							getDocDone();
+						}
 					});
 				}
 			}
@@ -79,16 +75,13 @@ io.on('connection', function(socket) {
 		if (keyword === req.keyword) {
 			getSnippetList();
 		} else {
-			var retrieveProcess = spawn(RETRIEVE_EXEC, [req.keyword]);
-			var retrieveOut = '';
-			retrieveProcess.stdout.on('data', function(data) {
-				retrieveOut += data;
-			});
-			retrieveProcess.on('close', function(code) {
-				keyword = req.keyword;
-				docList = retrieveOut.split('\n');
-				snippetList = [];
-				getSnippetList();
+			request(RETRIEVE_URL + req.keyword, function (error, response, body) {
+				if (!error && response.statusCode == 200) {
+					docList = JSON.parse(body);
+					keyword = req.keyword;
+					snippetList = [];
+					getSnippetList();
+				}
 			});
 		}
 	});
