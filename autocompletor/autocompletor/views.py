@@ -1,4 +1,5 @@
 from django.http import HttpResponse
+from django.views.decorators.csrf import csrf_exempt
 
 import json
 import time
@@ -22,3 +23,11 @@ def update_query(request, query=""):
             results.append(r[0])
     result = json.dumps(results)
     return HttpResponse(result)
+@csrf_exempt
+def cluster(request, req=""):
+    post = request.POST
+    docIDs = post.get('docIDs', None)
+    docIDs = json.loads(docIDs)
+    res = auto_completor.cluster(docIDs)
+    res = json.dumps(res)
+    return HttpResponse(res)

@@ -9,14 +9,35 @@ This Script Provides Basic API
     2. Record Query, Update DB and PinyinTree
 """
 import time
+import os
 
 from xpinyin import Pinyin
 
 import db
 from pinyin_tree import PinyinTree
+from operator import itemgetter
+from collections import OrderedDict, Counter
 
 pinyinTree = PinyinTree()
 p = Pinyin()
+
+docDirPost = {}
+
+def _load_dir_post():
+    with open("./autocompletor/auto_completor/data.direct.posting") as fp:
+        docCount = 0
+        for line in fp:
+            docCount += 1
+            items = line.split("\t")
+            docID = int(items[0])
+            count = 1
+            terms = []
+            while count < len(items):
+                termID = int(items[count])
+                tf = int(items[count+1])
+                terms.append((termID, tf))
+                count += 2
+            docDirPost[docID] = terms
 
 def _init():
     #terms = db.get_terms({"accFrequence": {"$gt": 300}})
@@ -25,6 +46,7 @@ def _init():
     for term in terms:
         pinyin = term['pinyin']
         pinyinTree.insert_pinyin(pinyin)
+    _load_dir_post()
 
 _init()
 
@@ -204,7 +226,7 @@ def update_query(query):
     if res:
         to = {"$inc": {"queryFrequence": 1}}
         db.update_term(cond, to)
-        if res[u'queryFrequence'] > 2:
+        if res[u'queryFrequence'] == 2:
             pinyinTree.insert_pinyin(pinyin)
     else:
         data = {"_id": query,
@@ -212,5 +234,74 @@ def update_query(query):
                 "accFrequence": 0,
                 "queryFrequence": 1}
         db.insert_term(data)
+
+
     related = _get_related(query)
     return related
+
+def cluster(docIDs):
+    points = {}
+    for docID in docIDs:
+        points[docID] = docDirPost[docID]
+    groups = [idx for idx in range(len(points))]
+    disP2P = {}
+    for idx1,point1 in enumerate(points):
+        for idx2,point2 in enumerate(points):
+            if (idx1 < idx2):
+                vector1 = points[point1]
+                vector2 = points[point2]
+                count1 = 0
+                count2 = 0
+                distance = 0
+                while count1 < len(vector1) and count2 < len(vector2):
+                    term1 = vector1[count1][0]
+                    term2 = vector2[count2][0]
+                    if term1 < term2:
+                        count1 += 1
+                    elif term1 > term2:
+                        count2 += 1
+                    else:
+                        distance += vector1[count1][1] * vector2[count2][1]
+                        count1 += 1
+                        count2 += 1
+                disP2P[str(idx1)+"#"+str(idx2)] = distance
+
+    disP2P = OrderedDict(sorted(disP2P.iteritems(), key=itemgetter(1), reverse=False))
+    groupNum = len(groups)
+    finalGroupNum = 3
+    while groupNum > finalGroupNum:
+        twopoins,distance = disP2P.popitem()
+        pointA = int(twopoins.split('#')[0])
+        pointB = int(twopoins.split('#')[1])
+     
+        pointAGroup = groups[pointA]
+        pointBGroup = groups[pointB]
+     
+        if(pointAGroup != pointBGroup):
+            for idx in range(len(groups)):
+                if groups[idx] == pointBGroup:
+                    groups[idx] = pointAGroup
+            groupNum -= 1
+
+    wantGroupNum = 3
+    finalGroup = Counter(groups).most_common(wantGroupNum)
+    finalGroup = [onecount[0] for onecount in finalGroup]
+ 
+ 
+    group1 = []
+    group2 = []
+    group3 = []
+    for idx, point in enumerate(points):
+        if groups[idx] == finalGroup[0]:
+            group1.append(point)
+    for idx, point in enumerate(points):
+        if groups[idx] == finalGroup[1]:
+            group2.append(point)
+    for idx, point in enumerate(points):
+        if groups[idx] == finalGroup[2]:
+            group3.append(point)
+    res = {}
+    res['group1'] = group1
+    res['group2'] = group2
+    res['group3'] = group3
+    return res
