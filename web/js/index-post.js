@@ -44,6 +44,10 @@ socket.on('search', function(msg) {
 	document.title = keyword + ' - ' + siteTitle;
 	docCount = res.docCount;
 	pageCount = Math.ceil(docCount / DOC_PER_PAGE);
+	var previewing = '';
+	var previewed = '';
+	var previewTimer = null;
+	
 	if (docCount > 0) {
 		$('#docCount').text(docCount);
 		$('#resultStat').removeClass('noResult');
@@ -62,13 +66,41 @@ socket.on('search', function(msg) {
 				protocol = '';
 			}
 			newDoc.find('.title').text(outline.title).attr('href', protocol + outline.url).attr('target', '_blank');
+			newDoc.find('.title').html(newDoc.find('.title').html().replace(/{%/g, '<span class="keyword">').replace(/%}/g, '</span>'));
 			newDoc.find('.url').text(outline.url);
 			newDoc.find('.url').html(newDoc.find('.url').html().replace(new RegExp(keyword, 'g'), '<span class="keyword">' + keyword + '</span>'));
 			newDoc.find('.date').text(outline.date + ' - ');
 			newDoc.find('.commentNumber').text(outline.commentNumber + ' 条评论 - ');
-			newDoc.find('.snippet').text(outline.snippet);
-			newDoc.find('.snippet').html(newDoc.find('.snippet').html().replace(new RegExp(keyword, 'g'), '<span class="keyword">' + keyword + '</span>'));
+			
+			/*
+			 * 临时去掉空格和日期，等待后端解决
+			 */
+			newDoc.find('.snippet').text(outline.snippet.replace(/　/g, ' ').substr(17));
+			
+			newDoc.find('.snippet').html(newDoc.find('.snippet').html().replace(/{%/g, '<span class="keyword">').replace(/%}/g, '</span>'));
 			$('#result').append(newDoc);
+			
+			newDoc.find('.abstract').mouseenter(function() {
+				previewing = $(this).parent().find('.title').attr('href');
+				if (previewing === previewed) {
+					$('#previewer').show();
+				} else {
+					$('#previewer').hide();
+					$.get(previewUrl + '/?url=' + previewing, function(data) {
+						var json = JSON.parse(data);
+						if (previewing == json.url) {
+							$('#previewer').css('background-image', 'url(data:image/png;base64,' + json.image + ')');
+							$('#previewer').show();
+							previewed = json.url;
+						}
+					});
+				}
+			});
+			
+			newDoc.find('.abstract').mouseleave(function() {
+				previewing = '';
+				$('#previewer').hide();
+			});
 		}
 	} else {
 		$('#resultStat').addClass('noResult');

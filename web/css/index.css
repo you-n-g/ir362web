@@ -50,7 +50,7 @@ body.initial #suggest { left: 0; top: -1px; position: relative; }
 #searchForm button:hover { background: -moz-linear-gradient(top, #2f5ff7, #2f57ef); background: -webkit-linear-gradient(top, #0f67ff, #2f5ff7); background: -khtml-linear-gradient(top, #0f67ff, #2f5ff7); background: -ms-linear-gradient(top, #0f67ff, #2f5ff7); background: -o-linear-gradient(top, #0f67ff, #2f5ff7); background: linear-gradient(top, #0f67ff, #2f5ff7); }
 #suggest { opacity: 0.93; display: none; border: 1px solid #cccccc; background: #ffffff; box-shadow: 0px 1px 3px #bbbbbb; left: 120px; top: 57px; position: absolute; width: 520px; max-height: 288px; overflow: hidden; list-style-type: none; text-align: left; }
 #suggest li.selected, #suggest li:hover { background: #dddddd; }
-#suggest li { display: block; padding-left: 8px; line-height: 36px; }
+#suggest li { cursor: pointer; display: block; padding-left: 8px; line-height: 36px; }
 
 #main { margin-left: 128px; }
 #main * { font-size: small; }
@@ -64,6 +64,7 @@ body.initial #suggest { left: 0; top: -1px; position: relative; }
 #result li { padding-bottom: 30px; }
 #result li .title, #result li .url { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #result li .title { display: block; font-size: 18px; color: #1a00c2; }
+#result li .title .keyword { font-size: 18px; color: #ff4a2e; }
 #result li .title:visited { color: #750066; }
 #result li .url { font-size: 14px; color: #005c0c; }
 #result li .url .keyword { font-weight: bold; }
@@ -76,6 +77,8 @@ body.initial #suggest { left: 0; top: -1px; position: relative; }
 #relative #relativer { margin-left: 32px; }
 #relative li a { display: inline-block; max-width: 240px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 13px; color: #1a00c2; line-height: 32px; }
 #relative li a:hover { cursor: pointer; }
+
+#previewer { display: none; border: 1px solid #cccccc; box-shadow: 1px 1px 6px #cccccc; width: 336px; height: 476px; position: fixed; top: 130px; right: 30px; background-size: 336px 476px; }
 
 #pageCtrl { margin-top: 10px; -moz-user-select: none; -webkit-user-select: none; -ms-user-select: none; -khtml-user-select: none; user-select: none; color: #1a00c2; font-size: 0; -webkit-text-size-adjust:none; }
 #pageCtrl.onePage { display: none; }
