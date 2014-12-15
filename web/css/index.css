@@ -62,15 +62,19 @@ body.initial #suggest { left: 0; top: -1px; position: relative; }
 
 #result { line-height: 150%; width: 512px; list-style-type: none; margin-top: 20px; }
 #result li { padding-bottom: 30px; }
-#result li .title, #result li .url { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#result li .title, #result li .url, #result li .url .urlString { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #result li .title { display: block; font-size: 18px; color: #1a00c2; }
 #result li .title .keyword { font-size: 18px; color: #ff4a2e; }
 #result li .title:visited { color: #750066; }
 #result li .url { font-size: 14px; color: #005c0c; }
-#result li .url .keyword { font-weight: bold; }
+#result li .url .urlString .keyword { font-weight: bold; }
+#result li .url .urlString { float: left; max-width: 480px; }
+#result li .url .preview { cursor: pointer; margin-left: 5px; }
+#result li .url .preview:hover { text-decoration: underline; }
 #result li .date, #result li .commentNumber { white-space: nowrap; color: #999999; }
 #result li .snippet { text-align: justify; }
 #result li .snippet .keyword { color: #ff4a2e; }
+#result li .cluster { margin-left: 5px; color: #999999; }
 
 #relative { width: 512px; margin-bottom: 30px; }
 #relative ul { vertical-align: top; display: inline-block; max-width: 240px; list-style-type: none; }

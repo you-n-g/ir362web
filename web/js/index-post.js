@@ -67,8 +67,8 @@ socket.on('search', function(msg) {
 			}
 			newDoc.find('.title').text(outline.title).attr('href', protocol + outline.url).attr('target', '_blank');
 			newDoc.find('.title').html(newDoc.find('.title').html().replace(/{%/g, '<span class="keyword">').replace(/%}/g, '</span>'));
-			newDoc.find('.url').text(outline.url);
-			newDoc.find('.url').html(newDoc.find('.url').html().replace(new RegExp(keyword, 'g'), '<span class="keyword">' + keyword + '</span>'));
+			newDoc.find('.urlString').text(outline.url);
+			newDoc.find('.urlString').html(newDoc.find('.urlString').html().replace(new RegExp(keyword, 'g'), '<span class="keyword">' + keyword + '</span>'));
 			newDoc.find('.date').text(outline.date + ' - ');
 			newDoc.find('.commentNumber').text(outline.commentNumber + ' 条评论 - ');
 			
@@ -80,8 +80,8 @@ socket.on('search', function(msg) {
 			newDoc.find('.snippet').html(newDoc.find('.snippet').html().replace(/{%/g, '<span class="keyword">').replace(/%}/g, '</span>'));
 			$('#result').append(newDoc);
 			
-			newDoc.find('.abstract').mouseenter(function() {
-				previewing = $(this).parent().find('.title').attr('href');
+			newDoc.find('.preview').mouseenter(function() {
+				previewing = $(this).parent().parent().find('.title').attr('href');
 				if (previewing === previewed) {
 					$('#previewer').show();
 				} else {
@@ -97,7 +97,7 @@ socket.on('search', function(msg) {
 				}
 			});
 			
-			newDoc.find('.abstract').mouseleave(function() {
+			newDoc.find('.preview').mouseleave(function() {
 				previewing = '';
 				$('#previewer').hide();
 			});
@@ -153,6 +153,18 @@ socket.on('search', function(msg) {
 	}
 	$('body').removeClass('initial');
 	window.scrollTo(0, 0);
+});
+
+socket.on('cluster', function(msg) {
+	try {
+		var res = JSON.parse(msg);
+		//console.log(msg);
+		if (res.keyword === keyword) {
+			for (var i = 0; i < res.group.length; i++) {
+				document.getElementsByClassName('clusterCount')[i].innerHTML = res.groupCount[res.group[i]];
+			}
+		}
+	} catch(e) {}
 });
 
 function updateQuery() {
