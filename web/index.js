@@ -17,6 +17,7 @@
 
 var RETRIEVE_URL = 'http://192.168.56.101:8080/IR362Server/GetSearchResults?q=';
 var GETDOC_URL = 'http://192.168.56.101:8080/IR362Server/GetDocInfo?id=';
+var SUGGEST_URL = 'http://192.168.56.101:8000/cluster/';
 var PORT = 8888;
 
 var spawn = require('child_process').spawn;
@@ -38,13 +39,11 @@ io.on('connection', function(socket) {
 	var keyword = '';
 	var docList = [];
 	var snippetList = [];
+	var groups = null;
 	socket.on('search', function(msg) {
 		console.log('search: ' + msg);
 		var req = JSON.parse(msg);
 		function getSnippetList() {
-			if (req.end > docList.length - 1) {
-				req.end = docList.length - 1;
-			}
 			var count = 0;
 			function getDocDone() {
 				count++;
@@ -72,6 +71,41 @@ io.on('connection', function(socket) {
 				}
 			}
 		}
+		function cluster() {
+			var length = docList.length;
+			if (length > 50) {
+				length = 50;
+			}
+			request.post({
+				url: SUGGEST_URL,
+				formData: {docIDs: JSON.stringify(docList.slice(0, length))}
+			}, function callback(error, response, data) {
+				if (!error && response.statusCode == 200) {
+					groups = JSON.parse(data);
+					var whichGroup = [];
+					var groupCount = {};
+					for (var j in groups) {
+						groupCount[j] = groups[j].length;
+					}
+					for (var i = req.start; i < req.end; i++) {
+						for (var j in groups) {
+							if (groups[j].indexOf(docList[i]) >= 0) {
+								whichGroup[i] = j;
+								break;
+							}
+						}
+					}
+					socket.emit('cluster', JSON.stringify({
+						keyword: keyword,
+						docCount: docList.length - 1,
+						start: req.start,
+						groupCount: groupCount,
+						group: whichGroup
+					}));
+				}
+			});
+		}
+		
 		if (keyword === req.keyword) {
 			getSnippetList();
 		} else {
@@ -80,7 +114,12 @@ io.on('connection', function(socket) {
 					docList = JSON.parse(body);
 					keyword = req.keyword;
 					snippetList = [];
+					if (req.end > docList.length - 1) {
+						req.end = docList.length - 1;
+					}
 					getSnippetList();
+					groups = null;
+					cluster();
 				}
 			});
 		}
